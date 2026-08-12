@@ -7,7 +7,7 @@ function normalizePhone(phone: string) {
   return digits;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const requestId = crypto.randomUUID();
   const service = createFuelRequestService();
   const { id } = await Promise.resolve(params);
