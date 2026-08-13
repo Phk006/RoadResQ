@@ -6,8 +6,8 @@ const searchParamsSchema = z.object({
   query: z.string().trim().optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
-  radiusMeters: z.coerce.number().int().positive().max(50_000).default(12_000),
-  limit: z.coerce.number().int().positive().max(30).default(12)
+  radiusMeters: z.coerce.number().int().positive().max(50_000).default(10_000),
+  limit: z.coerce.number().int().positive().max(30).default(20)
 });
 
 export async function GET(request: Request) {

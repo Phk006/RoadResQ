@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/observability/logger";
 import { fuelRequestSchema } from "@/lib/schemas/requests";
 import { createFuelRequestService } from "@/lib/requests/service";
+import { sendHelpLineEmail } from "@/lib/help-line/email";
 
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
@@ -13,7 +14,9 @@ export async function POST(request: Request) {
     }
     const service = createFuelRequestService();
     const result = await service.createRequest(parsed.data);
+    const emailNotification = await sendHelpLineEmail(result.request);
     logger.info("request.created", { requestId, fuelType: result.request.fuelType, storageMode: result.storageMode, requestRecordId: result.request.id });
+    logger.info("request.help_line_email", { requestId, notificationStatus: emailNotification.status, destination: emailNotification.destination ?? null });
     return NextResponse.json(
       {
         data: {
@@ -21,7 +24,8 @@ export async function POST(request: Request) {
           status: result.request.status,
           storageMode: result.storageMode,
           estimatedTotal: result.quote.total,
-          currency: result.quote.currency
+          currency: result.quote.currency,
+          emailNotification
         },
         error: null
       },

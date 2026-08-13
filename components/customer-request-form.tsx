@@ -59,7 +59,12 @@ export function CustomerRequestForm() {
   const [quantityLitres, setQuantityLitres] = useState("3");
   const [priority, setPriority] = useState<"NORMAL" | "HIGH">("HIGH");
   const [customerName, setCustomerName] = useState("");
-  const [submission, setSubmission] = useState<{ status: "idle" | "submitting" | "success" | "error"; message: string; requestId?: string }>({ status: "idle", message: "Ready when you are." });
+  const [submission, setSubmission] = useState<{
+    status: "idle" | "submitting" | "success" | "error";
+    message: string;
+    requestId?: string;
+    emailNotification?: { status: "sent" | "skipped" | "failed"; message: string; destination?: string };
+  }>({ status: "idle", message: "Ready when you are." });
   const [isMountReady, setIsMountReady] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
@@ -108,11 +113,16 @@ export function CustomerRequestForm() {
   }, [fuelType, quantityLitres]);
 
   const currentCoordinates = useMemo(() => {
-    const latitude = Number(location.latitude);
-    const longitude = Number(location.longitude);
+    const latitudeText = location.latitude.trim();
+    const longitudeText = location.longitude.trim();
+    if (!latitudeText || !longitudeText) return null;
+    const latitude = Number(latitudeText);
+    const longitude = Number(longitudeText);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
     return { latitude, longitude, label: location.status === "ready" ? "Current request location" : "Chosen location" };
   }, [location.latitude, location.longitude, location.status]);
+
+  const liveCoordinates = location.status === "ready" ? currentCoordinates : null;
 
   function handleStationPick(coordinates: { latitude: number; longitude: number; label?: string }) {
     setLocation({
@@ -149,12 +159,24 @@ export function CustomerRequestForm() {
         requestChannel: "WEB"
       })
     });
-    const payload = (await response.json()) as { data?: { requestId?: string; storageMode?: string }; error?: { message?: string } };
+    const payload = (await response.json()) as {
+      data?: {
+        requestId?: string;
+        storageMode?: string;
+        emailNotification?: { status: "sent" | "skipped" | "failed"; message: string; destination?: string };
+      };
+      error?: { message?: string };
+    };
     if (!response.ok || !payload.data?.requestId) {
       setSubmission({ status: "error", message: payload.error?.message ?? "We could not create the request." });
       return;
     }
-    setSubmission({ status: "success", message: `Request ${payload.data.requestId} created successfully.`, requestId: payload.data.requestId });
+    setSubmission({
+      status: "success",
+      message: `Request ${payload.data.requestId} created successfully.`,
+      requestId: payload.data.requestId,
+      emailNotification: payload.data.emailNotification
+    });
   }
 
   return (
@@ -290,7 +312,7 @@ export function CustomerRequestForm() {
 
         <div className="animate-rise-in motion-reduce:animate-none" style={{ animationDelay: "260ms" }}>
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-fuel-500">Step 04 · Live fuel stations</p>
-          <FuelStationExplorer currentCoordinates={currentCoordinates} onPickCoordinates={handleStationPick} />
+          <FuelStationExplorer currentCoordinates={liveCoordinates} onPickCoordinates={handleStationPick} />
         </div>
 
         <SectionCard
@@ -329,6 +351,11 @@ export function CustomerRequestForm() {
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 Request ID: <span className="font-semibold">{submission.requestId}</span>
                 <div className="mt-1 text-emerald-800">We will search for the best partner, not just the nearest one.</div>
+                <div className="mt-2 rounded-xl border border-emerald-200 bg-white/70 px-3 py-2 text-xs leading-5 text-emerald-900">
+                  Help-line email: <span className="font-semibold">{submission.emailNotification?.status ?? "pending"}</span>
+                  {submission.emailNotification?.destination ? ` → ${submission.emailNotification.destination}` : null}
+                  <div className="mt-1 text-emerald-700">{submission.emailNotification?.message ?? "Email configuration not yet verified."}</div>
+                </div>
               </div>
               {submission.requestId ? <RequestTracker requestId={submission.requestId} contactPhone={contactPhone} /> : null}
             </div>

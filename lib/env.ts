@@ -26,7 +26,13 @@ const environmentSchema = z.object({
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  FUEL10_SUPPORT_NUMBER: z.string().min(1).optional()
+  FUEL10_SUPPORT_NUMBER: z.string().min(1).optional(),
+  HELP_LINE_EMAIL_TO: z.string().email().optional(),
+  HELP_LINE_EMAIL_FROM: z.string().email().optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional()
 });
 
 export const env = environmentSchema.parse({
@@ -50,5 +56,11 @@ export const env = environmentSchema.parse({
   SUPABASE_URL: emptyToUndefined(process.env.SUPABASE_URL),
   SUPABASE_ANON_KEY: emptyToUndefined(process.env.SUPABASE_ANON_KEY),
   SUPABASE_SERVICE_ROLE_KEY: emptyToUndefined(process.env.SUPABASE_SERVICE_ROLE_KEY),
-  FUEL10_SUPPORT_NUMBER: emptyToUndefined(process.env.FUEL10_SUPPORT_NUMBER)
+  FUEL10_SUPPORT_NUMBER: emptyToUndefined(process.env.FUEL10_SUPPORT_NUMBER),
+  HELP_LINE_EMAIL_TO: emptyToUndefined(process.env.HELP_LINE_EMAIL_TO),
+  HELP_LINE_EMAIL_FROM: emptyToUndefined(process.env.HELP_LINE_EMAIL_FROM),
+  SMTP_HOST: emptyToUndefined(process.env.SMTP_HOST),
+  SMTP_PORT: emptyToUndefined(process.env.SMTP_PORT),
+  SMTP_USER: emptyToUndefined(process.env.SMTP_USER),
+  SMTP_PASS: emptyToUndefined(process.env.SMTP_PASS)
 });

@@ -20,6 +20,7 @@ const DEFAULT_CITY = MAJOR_INDIAN_CITIES[0];
 
 export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: FuelStationExplorerProps) {
   const initialLoadRef = useRef(false);
+  const liveSearchKeyRef = useRef<string | null>(null);
   const [query, setQuery] = useState(DEFAULT_CITY.label);
   const [status, setStatus] = useState("Search a city, landmark, or coordinates in India to find live fuel stations.");
   const [loading, setLoading] = useState(false);
@@ -67,8 +68,8 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
       }
       setStatus(
         payload.data.stations.length
-          ? `Loaded ${payload.data.stations.length} fuel stations near ${payload.data.queryLabel}.`
-          : `No fuel stations were found near ${payload.data.queryLabel}. Try a wider search.`
+          ? `Loaded ${payload.data.stations.length} fuel stations within 10 km of ${payload.data.queryLabel}.`
+          : `No fuel stations were found within 10 km of ${payload.data.queryLabel}. Try a wider search.`
       );
     } catch (error) {
       setStations([]);
@@ -88,8 +89,8 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
     }
     const url = new URL("/api/fuel-stations", window.location.origin);
     url.searchParams.set("query", trimmed);
-    url.searchParams.set("radiusMeters", "12000");
-    url.searchParams.set("limit", "12");
+    url.searchParams.set("radiusMeters", "10000");
+    url.searchParams.set("limit", "20");
     await runSearch(url.toString(), trimmed, true);
   }
 
@@ -98,8 +99,8 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
     const url = new URL("/api/fuel-stations", window.location.origin);
     url.searchParams.set("latitude", city.latitude.toString());
     url.searchParams.set("longitude", city.longitude.toString());
-    url.searchParams.set("radiusMeters", "12000");
-    url.searchParams.set("limit", "12");
+    url.searchParams.set("radiusMeters", "10000");
+    url.searchParams.set("limit", "20");
     await runSearch(url.toString(), city.label, true);
   }
 
@@ -112,8 +113,8 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
     const url = new URL("/api/fuel-stations", window.location.origin);
     url.searchParams.set("latitude", currentCoordinates.latitude.toString());
     url.searchParams.set("longitude", currentCoordinates.longitude.toString());
-    url.searchParams.set("radiusMeters", "12000");
-    url.searchParams.set("limit", "12");
+    url.searchParams.set("radiusMeters", "10000");
+    url.searchParams.set("limit", "20");
     await runSearch(url.toString(), currentCoordinates.label ?? "your request location", true);
   }
 
@@ -133,10 +134,25 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
   }
 
   useEffect(() => {
-    if (initialLoadRef.current) return;
-    initialLoadRef.current = true;
-    void loadCity(DEFAULT_CITY);
-  }, []);
+    if (!currentCoordinates) {
+      if (initialLoadRef.current) return;
+      initialLoadRef.current = true;
+      void loadCity(DEFAULT_CITY);
+      return;
+    }
+
+    const liveKey = `${currentCoordinates.latitude.toFixed(4)},${currentCoordinates.longitude.toFixed(4)}`;
+    if (liveSearchKeyRef.current === liveKey) return;
+    liveSearchKeyRef.current = liveKey;
+
+    setQuery(currentCoordinates.label ?? "Current location");
+    const url = new URL("/api/fuel-stations", window.location.origin);
+    url.searchParams.set("latitude", currentCoordinates.latitude.toString());
+    url.searchParams.set("longitude", currentCoordinates.longitude.toString());
+    url.searchParams.set("radiusMeters", "10000");
+    url.searchParams.set("limit", "20");
+    void runSearch(url.toString(), currentCoordinates.label ?? "your live location", false);
+  }, [currentCoordinates]);
 
   return (
     <section className="mt-8 rounded-3xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] animate-rise-in motion-reduce:animate-none">
@@ -182,6 +198,10 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
         <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+            <span>Nearest station is shown first. Search radius: 10 km.</span>
+            {stations.length ? <span className="font-semibold text-orange-300">{stations[0]?.name}</span> : null}
+          </div>
           <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-500 hover:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.95)]">
             <iframe
               title="Fuel station map"
@@ -205,13 +225,20 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
 
           <div className="grid gap-3 md:grid-cols-2">
             {stations.length ? (
-              stations.map((station) => {
+              stations.map((station, index) => {
                 const phone = station.phone ? normalizeDialerPhone(station.phone) : "";
                 return (
                   <article key={station.id} className="rounded-2xl border border-slate-700 bg-slate-900 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-400">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h4 className="text-base font-semibold text-white">{station.name}</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-base font-semibold text-white">{station.name}</h4>
+                          {index === 0 ? (
+                            <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-300">
+                              Nearest
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="mt-1 text-sm text-slate-300">{station.address}</p>
                       </div>
                       <button

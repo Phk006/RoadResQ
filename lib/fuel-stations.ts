@@ -192,7 +192,7 @@ export async function searchFuelStationsAround(input: {
   radiusMeters?: number;
   limit?: number;
 }): Promise<FuelStationResult[]> {
-  const radiusMeters = input.radiusMeters ?? 12000;
+  const radiusMeters = input.radiusMeters ?? 10000;
   const limit = input.limit ?? 20;
   const query = buildOverpassQuery(input.latitude, input.longitude, radiusMeters);
 
