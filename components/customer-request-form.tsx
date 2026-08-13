@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BrowserGpsProvider } from "@/lib/location/provider";
 import { calculatePrice, getEstimatedFuelPricePerLitre } from "@/lib/pricing/service";
 import { RequestTracker } from "@/components/request-tracker";
+import { FuelStationExplorer } from "@/components/fuel-station-explorer";
 
 type LocationState =
   | { status: "idle" | "loading" | "manual"; latitude: string; longitude: string; message: string }
@@ -76,6 +77,24 @@ export function CustomerRequestForm() {
     if (!Number.isFinite(litres) || litres <= 0) return null;
     return calculatePrice(litres, getEstimatedFuelPricePerLitre(fuelType));
   }, [fuelType, quantityLitres]);
+
+  const currentCoordinates = useMemo(() => {
+    const latitude = Number(location.latitude);
+    const longitude = Number(location.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    return { latitude, longitude, label: location.status === "ready" ? "Current request location" : "Chosen location" };
+  }, [location.latitude, location.longitude, location.status]);
+
+  function handleStationPick(coordinates: { latitude: number; longitude: number; label?: string }) {
+    setLocation({
+      status: "manual",
+      latitude: coordinates.latitude.toFixed(6),
+      longitude: coordinates.longitude.toFixed(6),
+      message: coordinates.label
+        ? `Selected ${coordinates.label} from the live station explorer.`
+        : "Selected coordinates from the live station explorer."
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -181,6 +200,8 @@ export function CustomerRequestForm() {
           <p className="mt-2 text-sm leading-6 text-slate-600">Keep the engine off, avoid open flames, and follow crew instructions while the delivery is in progress.</p>
         </div>
       </div>
+
+      <FuelStationExplorer currentCoordinates={currentCoordinates} onPickCoordinates={handleStationPick} />
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="submit" className="inline-flex items-center justify-center rounded-2xl bg-fuel-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-fuel-600 disabled:cursor-not-allowed disabled:opacity-60" disabled={submission.status === "submitting" || !idempotencyKey}>
