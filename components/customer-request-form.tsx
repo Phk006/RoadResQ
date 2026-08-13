@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BrowserGpsProvider } from "@/lib/location/provider";
 import { calculatePrice, getEstimatedFuelPricePerLitre } from "@/lib/pricing/service";
 import { RequestTracker } from "@/components/request-tracker";
@@ -12,6 +12,35 @@ type LocationState =
   | { status: "error"; latitude: string; longitude: string; message: string };
 
 const initialLocation: LocationState = { status: "idle", latitude: "", longitude: "", message: "Location will be captured before you submit." };
+
+type SectionCardProps = {
+  step: string;
+  title: string;
+  description: string;
+  delay: number;
+  children: ReactNode;
+};
+
+function SectionCard({ step, title, description, delay, children }: SectionCardProps) {
+  return (
+    <section
+      className="rounded-3xl border border-slate-200 bg-white/85 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-rise-in motion-reduce:animate-none"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-xs font-semibold text-white shadow-sm">
+          {step}
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-fuel-500">Step {step}</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-950">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
 
 function getDraftKey() {
   if (typeof window === "undefined") return crypto.randomUUID();
@@ -129,7 +158,7 @@ export function CustomerRequestForm() {
   }
 
   return (
-    <form className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_24px_80px_-44px_rgba(16,24,40,0.45)] backdrop-blur" onSubmit={handleSubmit}>
+    <form className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_24px_80px_-44px_rgba(16,24,40,0.45)] backdrop-blur animate-rise-in motion-reduce:animate-none" onSubmit={handleSubmit}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-fuel-500">Emergency Request</p>
@@ -138,87 +167,174 @@ export function CustomerRequestForm() {
         <div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">SLA-aware dispatch</div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Contact phone
-          <input className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} placeholder="+91 98765 43210" autoComplete="tel" required />
-        </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Name
-          <input className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Optional" autoComplete="name" />
-        </label>
-      </div>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Fuel type
-          <select className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={fuelType} onChange={(event) => setFuelType(event.target.value as "PETROL" | "DIESEL")}>
-            <option value="PETROL">Petrol</option>
-            <option value="DIESEL">Diesel</option>
-          </select>
-        </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Quantity
-          <input className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={quantityLitres} onChange={(event) => setQuantityLitres(event.target.value)} type="number" min="1" max="20" step="0.5" required />
-        </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Priority
-          <select className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={priority} onChange={(event) => setPriority(event.target.value as "NORMAL" | "HIGH")}>
-            <option value="HIGH">High</option>
-            <option value="NORMAL">Normal</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-[1.4fr_1fr_1fr]">
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Latitude
-          <input className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, status: "manual", latitude: event.target.value, message: "Manual coordinates selected." }))} inputMode="decimal" placeholder="12.9716" required />
-        </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Longitude
-          <input className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, status: "manual", longitude: event.target.value, message: "Manual coordinates selected." }))} inputMode="decimal" placeholder="77.5946" required />
-        </label>
-        <button type="button" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100" onClick={() => setLocation((current) => ({ ...current, status: "manual", message: "Manual location entry enabled. Paste coordinates." }))}>
-          Enter manually
-        </button>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        {location.message}
-        {location.status === "ready" && typeof location.accuracy === "number" ? ` Accuracy: ${location.accuracy.toFixed(0)}m.` : null}
-      </div>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Estimated price</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-950">{estimate ? `₹${estimate.total.toFixed(2)}` : "Enter quantity"}</p>
-          <p className="mt-1 text-sm text-slate-600">{estimate ? `Fuel ${estimate.fuelSubtotal.toFixed(2)} + delivery ${estimate.deliveryFee.toFixed(2)} + emergency ${estimate.emergencyFee.toFixed(2)}` : "The quote updates as you edit quantity and fuel type."}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Safety note</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Keep the engine off, avoid open flames, and follow crew instructions while the delivery is in progress.</p>
-        </div>
-      </div>
-
-      <FuelStationExplorer currentCoordinates={currentCoordinates} onPickCoordinates={handleStationPick} />
-
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button type="submit" className="inline-flex items-center justify-center rounded-2xl bg-fuel-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-fuel-600 disabled:cursor-not-allowed disabled:opacity-60" disabled={submission.status === "submitting" || !idempotencyKey}>
-          {submission.status === "submitting" ? "Submitting..." : "Confirm request"}
-        </button>
-        <p className="text-sm text-slate-600">{submission.message}</p>
-      </div>
-
-      {submission.status === "success" ? (
-        <div className="mt-4 grid gap-4">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            Request ID: <span className="font-semibold">{submission.requestId}</span>
-            <div className="mt-1 text-emerald-800">We will search for the best partner, not just the nearest one.</div>
+      <div className="mt-6 space-y-4">
+        <SectionCard
+          step="01"
+          title="Contact details"
+          description="Keep the primary phone number first so dispatch can reach the customer quickly."
+          delay={80}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Contact phone
+              <input
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+                placeholder="+91 98765 43210"
+                autoComplete="tel"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Name
+              <input
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder="Optional"
+                autoComplete="name"
+              />
+            </label>
           </div>
-          {submission.requestId ? <RequestTracker requestId={submission.requestId} contactPhone={contactPhone} /> : null}
+        </SectionCard>
+
+        <SectionCard
+          step="02"
+          title="Fuel request"
+          description="Choose the fuel, quantity, and urgency before we calculate the order."
+          delay={140}
+        >
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Fuel type
+              <select
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={fuelType}
+                onChange={(event) => setFuelType(event.target.value as "PETROL" | "DIESEL")}
+              >
+                <option value="PETROL">Petrol</option>
+                <option value="DIESEL">Diesel</option>
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Quantity
+              <input
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={quantityLitres}
+                onChange={(event) => setQuantityLitres(event.target.value)}
+                type="number"
+                min="1"
+                max="20"
+                step="0.5"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Priority
+              <select
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={priority}
+                onChange={(event) => setPriority(event.target.value as "NORMAL" | "HIGH")}
+              >
+                <option value="HIGH">High</option>
+                <option value="NORMAL">Normal</option>
+              </select>
+            </label>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          step="03"
+          title="Location capture"
+          description="Use GPS or type coordinates manually so the delivery team has an exact drop point."
+          delay={200}
+        >
+          <div className="grid gap-4 md:grid-cols-[1.4fr_1fr_1fr]">
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Latitude
+              <input
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={location.latitude}
+                onChange={(event) => setLocation((current) => ({ ...current, status: "manual", latitude: event.target.value, message: "Manual coordinates selected." }))}
+                inputMode="decimal"
+                placeholder="12.9716"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Longitude
+              <input
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-fuel-500 focus:bg-white"
+                value={location.longitude}
+                onChange={(event) => setLocation((current) => ({ ...current, status: "manual", longitude: event.target.value, message: "Manual coordinates selected." }))}
+                inputMode="decimal"
+                placeholder="77.5946"
+                required
+              />
+            </label>
+            <button
+              type="button"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-100"
+              onClick={() => setLocation((current) => ({ ...current, status: "manual", message: "Manual location entry enabled. Paste coordinates." }))}
+            >
+              Enter manually
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            {location.message}
+            {location.status === "ready" && typeof location.accuracy === "number" ? ` Accuracy: ${location.accuracy.toFixed(0)}m.` : null}
+          </div>
+        </SectionCard>
+
+        <div className="animate-rise-in motion-reduce:animate-none" style={{ animationDelay: "260ms" }}>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-fuel-500">Step 04 · Live fuel stations</p>
+          <FuelStationExplorer currentCoordinates={currentCoordinates} onPickCoordinates={handleStationPick} />
         </div>
-      ) : null}
+
+        <SectionCard
+          step="05"
+          title="Estimate and submit"
+          description="Review the quote and safety note, then send the request."
+          delay={320}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-800">Estimated price</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{estimate ? `₹${estimate.total.toFixed(2)}` : "Enter quantity"}</p>
+              <p className="mt-1 text-sm text-slate-600">
+                {estimate ? `Fuel ${estimate.fuelSubtotal.toFixed(2)} + delivery ${estimate.deliveryFee.toFixed(2)} + emergency ${estimate.emergencyFee.toFixed(2)}` : "The quote updates as you edit quantity and fuel type."}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-800">Safety note</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Keep the engine off, avoid open flames, and follow crew instructions while the delivery is in progress.</p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-2xl bg-fuel-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-fuel-600 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submission.status === "submitting" || !idempotencyKey}
+            >
+              {submission.status === "submitting" ? "Submitting..." : "Confirm request"}
+            </button>
+            <p className="text-sm text-slate-600">{submission.message}</p>
+          </div>
+
+          {submission.status === "success" ? (
+            <div className="mt-4 grid gap-4">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                Request ID: <span className="font-semibold">{submission.requestId}</span>
+                <div className="mt-1 text-emerald-800">We will search for the best partner, not just the nearest one.</div>
+              </div>
+              {submission.requestId ? <RequestTracker requestId={submission.requestId} contactPhone={contactPhone} /> : null}
+            </div>
+          ) : null}
+        </SectionCard>
+      </div>
 
       <input type="hidden" value={idempotencyKey} readOnly />
     </form>

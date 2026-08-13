@@ -139,7 +139,7 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
   }, []);
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)]">
+    <section className="mt-8 rounded-3xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] animate-rise-in motion-reduce:animate-none">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">India fuel finder</p>
@@ -180,13 +180,13 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
         </label>
       </form>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-900">
+          <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-500 hover:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.95)]">
             <iframe
               title="Fuel station map"
               src={mapEmbedUrl}
-              className="h-[320px] w-full border-0"
+              className="h-[300px] w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
@@ -208,7 +208,7 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
               stations.map((station) => {
                 const phone = station.phone ? normalizeDialerPhone(station.phone) : "";
                 return (
-                  <article key={station.id} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+                  <article key={station.id} className="rounded-2xl border border-slate-700 bg-slate-900 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-400">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-base font-semibold text-white">{station.name}</h4>
@@ -260,7 +260,7 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
           </div>
         </div>
 
-        <aside className="rounded-3xl border border-slate-700 bg-slate-900 p-4">
+        <aside className="rounded-3xl border border-slate-700 bg-slate-900 p-4 lg:sticky lg:top-4">
           <p className="text-sm font-semibold text-white">Major city emergency pump numbers</p>
           <p className="mt-1 text-sm leading-6 text-slate-300">Choose a city to load nearby stations and call the nearest number.</p>
 
@@ -270,7 +270,7 @@ export function FuelStationExplorer({ currentCoordinates, onPickCoordinates }: F
                 key={city.slug}
                 type="button"
                 onClick={() => void loadCity(city)}
-                className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-left transition hover:border-orange-400 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-400 hover:bg-slate-800"
               >
                 <span className="text-sm font-semibold text-white">{city.label}</span>
                 <span className="text-xs text-slate-400">tap to load</span>
